@@ -1,0 +1,225 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(213, 87%, 54%);
+  --primary-foreground: hsl(210, 100%, 98%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+  
+  /* Custom medical theme colors */
+  --medical-blue: hsl(213, 87%, 54%);
+  --success-green: hsl(158, 89%, 30%);
+  --alert-red: hsl(0, 74%, 49%);
+  --neutral-50: hsl(210, 40%, 98%);
+  --neutral-200: hsl(214, 32%, 91%);
+  --neutral-500: hsl(215, 16%, 47%);
+  --neutral-800: hsl(217, 33%, 17%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(213, 87%, 54%);
+  --primary-foreground: hsl(210, 100%, 98%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  /* Custom BEM-style components */
+  .appointment-booking {
+    @apply bg-white rounded-lg shadow-sm border border-neutral-200;
+  }
+  
+  .appointment-booking__header {
+    @apply p-6 border-b border-neutral-200;
+  }
+  
+  .appointment-booking__form {
+    @apply p-6 space-y-6;
+  }
+  
+  .form-group {
+    @apply space-y-2;
+  }
+  
+  .form-group__label {
+    @apply block text-sm font-medium text-neutral-800;
+  }
+  
+  .form-group__input {
+    @apply w-full px-3 py-2 border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+  
+  .time-slots {
+    @apply grid grid-cols-4 gap-2;
+  }
+  
+  .time-slot {
+    @apply px-3 py-2 text-sm border border-neutral-200 rounded-md text-center cursor-pointer hover:bg-neutral-50 transition-colors;
+  }
+  
+  .time-slot--selected {
+    @apply bg-blue-600 text-white border-blue-600;
+  }
+  
+  .time-slot--unavailable {
+    @apply bg-neutral-100 text-neutral-400 cursor-not-allowed;
+  }
+  
+  .doctor-schedule {
+    @apply bg-white rounded-lg shadow-sm border border-neutral-200;
+  }
+  
+  .doctor-schedule__header {
+    @apply p-6 border-b border-neutral-200 flex justify-between items-center;
+  }
+  
+  .doctor-schedule__table {
+    @apply w-full;
+  }
+  
+  .doctor-schedule__table th {
+    @apply px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider bg-neutral-50;
+  }
+  
+  .doctor-schedule__table td {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-neutral-800 border-b border-neutral-200;
+  }
+  
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .status-badge--confirmed {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .status-badge--pending {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .status-badge--cancelled {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  .dashboard {
+    @apply bg-white rounded-lg shadow-sm border border-neutral-200;
+  }
+  
+  .dashboard__header {
+    @apply p-6 border-b border-neutral-200;
+  }
+  
+  .dashboard__filters {
+    @apply p-6 border-b border-neutral-200 bg-neutral-50;
+  }
+  
+  .dashboard__content {
+    @apply p-6;
+  }
+  
+  .notification-settings {
+    @apply bg-white rounded-lg shadow-sm border border-neutral-200 p-6;
+  }
+  
+  .toggle-switch {
+    @apply relative inline-flex h-6 w-11 items-center rounded-full bg-neutral-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+  
+  .toggle-switch--active {
+    @apply bg-blue-600;
+  }
+  
+  .toggle-switch__thumb {
+    @apply inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform;
+  }
+  
+  .toggle-switch__thumb--active {
+    @apply translate-x-6;
+  }
+}
+
+@layer utilities {
+  .text-medical-blue {
+    color: var(--medical-blue);
+  }
+  
+  .bg-medical-blue {
+    background-color: var(--medical-blue);
+  }
+  
+  .text-success-green {
+    color: var(--success-green);
+  }
+  
+  .bg-success-green {
+    background-color: var(--success-green);
+  }
+  
+  .text-alert-red {
+    color: var(--alert-red);
+  }
+  
+  .bg-alert-red {
+    background-color: var(--alert-red);
+  }
+  
+  .bg-neutral-50 {
+    background-color: var(--neutral-50);
+  }
+  
+  .border-neutral-200 {
+    border-color: var(--neutral-200);
+  }
+  
+  .text-neutral-500 {
+    color: var(--neutral-500);
+  }
+  
+  .text-neutral-800 {
+    color: var(--neutral-800);
+  }
+}
