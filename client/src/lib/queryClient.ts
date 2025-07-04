@@ -10,7 +10,7 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown
 ): Promise<Response> {
   const res = await fetch(url, {
     method,
@@ -19,7 +19,12 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`[API ERROR] ${url} (${res.status}):`, text);
+    throw new Error(`Request failed: ${res.status}`);
+  }
+
   return res;
 }
 

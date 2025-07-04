@@ -24,18 +24,18 @@ export default function PatientView({ onReschedule }: PatientViewProps) {
       <div className="lg:col-span-2">
         <AppointmentBooking />
       </div>
-      
+
       {/* Patient Information & Notifications */}
       <div className="space-y-6">
         <PatientInformation />
         <NotificationSettings patientId={currentPatientId} />
-        
+
         {/* My Appointments */}
         <Card className="appointment-booking">
           <CardHeader className="appointment-booking__header">
             <CardTitle className="text-lg font-semibold text-neutral-800">
               <Calendar className="text-blue-600 mr-2 inline" />
-              My Appointments
+              Các cuộc hẹn khám của tôi
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
@@ -60,13 +60,12 @@ export default function PatientView({ onReschedule }: PatientViewProps) {
                       </div>
                       <div className="flex items-center space-x-2">
                         <span
-                          className={`status-badge ${
-                            appointment.status === "confirmed"
-                              ? "status-badge--confirmed"
-                              : appointment.status === "pending"
+                          className={`status-badge ${appointment.status === "confirmed"
+                            ? "status-badge--confirmed"
+                            : appointment.status === "pending"
                               ? "status-badge--pending"
                               : "status-badge--cancelled"
-                          }`}
+                            }`}
                         >
                           {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                         </span>

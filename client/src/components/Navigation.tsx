@@ -23,9 +23,9 @@ export default function Navigation({ currentRole, onRoleChange }: NavigationProp
   };
 
   const roleLabels = {
-    patient: "Patient",
-    doctor: "Doctor",
-    receptionist: "Receptionist"
+    patient: "Bệnh nhân",
+    doctor: "Bác sĩ",
+    receptionist: "Nhân viên"
   };
 
   return (
@@ -41,14 +41,14 @@ export default function Navigation({ currentRole, onRoleChange }: NavigationProp
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="sm" className="text-neutral-500 hover:text-neutral-800">
                 <Bell className="h-4 w-4 mr-1" />
-                Notifications
+                Thông báo
               </Button>
               <div className="flex items-center space-x-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100" alt="Profile" />
                   <AvatarFallback>DS</AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium text-neutral-800">Dr. Smith</span>
+                <span className="text-sm font-medium text-neutral-800">Cao Văn An</span>
               </div>
             </div>
           </div>

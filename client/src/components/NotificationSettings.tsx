@@ -59,15 +59,15 @@ export default function NotificationSettings({ patientId }: NotificationSettings
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-neutral-800 mb-4">
           <Bell className="text-blue-600 mr-2 inline" />
-          Notification Settings
+          Cài đặt thông báo
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-neutral-800">Email Reminders</p>
-              <p className="text-xs text-neutral-500">Receive appointment reminders via email</p>
+              <p className="text-sm font-medium text-neutral-800">Thông báo Email</p>
+              <p className="text-xs text-neutral-500">Nhận lời nhắc hẹn qua Email</p>
             </div>
             <Switch
               checked={settings.emailEnabled}
@@ -78,8 +78,8 @@ export default function NotificationSettings({ patientId }: NotificationSettings
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-neutral-800">SMS Reminders</p>
-              <p className="text-xs text-neutral-500">Receive appointment reminders via text message</p>
+              <p className="text-sm font-medium text-neutral-800">Thông báo SMS </p>
+              <p className="text-xs text-neutral-500">Nhận lời nhắc hẹn qua SMS</p>
             </div>
             <Switch
               checked={settings.smsEnabled}
@@ -88,7 +88,7 @@ export default function NotificationSettings({ patientId }: NotificationSettings
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-neutral-800">Push Notifications</p>
               <p className="text-xs text-neutral-500">Receive notifications in the app</p>
@@ -98,7 +98,7 @@ export default function NotificationSettings({ patientId }: NotificationSettings
               onCheckedChange={(checked) => handleToggle("pushEnabled", checked)}
               disabled={updateSettingsMutation.isPending}
             />
-          </div>
+          </div> */}
         </div>
       </CardContent>
     </Card>

@@ -1,14 +1,14 @@
-import { defineConfig } from "drizzle-kit";
+import { type Config } from "drizzle-kit";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
-}
-
-export default defineConfig({
-  out: "./migrations",
+export default {
   schema: "./shared/schema.ts",
-  dialect: "postgresql",
+  out: "./drizzle",
+  dialect: "mysql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    host: "localhost",   // hoặc "127.0.0.1"
+    port: 3306,
+    user: "root",
+    password: "CaoAn7361",         // nếu bạn không đặt password trong XAMPP thì để trống
+    database: "quanlyphongkhamVanAn", // tên database bạn tạo trong phpMyAdmin
   },
-});
+} satisfies Config;

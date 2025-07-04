@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertAppointmentSchema, type Doctor } from "@shared/schema";
 import { z } from "zod";
+import { log } from "console";
 
 const bookingFormSchema = insertAppointmentSchema.extend({
   selectedTimeSlot: z.string().min(1, "Please select a time slot"),
@@ -40,13 +41,22 @@ export default function AppointmentBooking() {
       selectedTimeSlot: "",
     },
   });
+  console.log("Form default values:", form.getValues());
 
   const { data: doctors = [] } = useQuery<Doctor[]>({
     queryKey: ["/api/doctors"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/doctors");
+      return res.json();
+    },
   });
+
 
   const selectedDoctorId = form.watch("doctorId");
   const selectedDate = form.watch("date");
+  const watchedDate = form.watch("date");
+
+
 
   const { data: availableSlots = [] } = useQuery<string[]>({
     queryKey: [`/api/appointments/available-slots/${selectedDoctorId}/${selectedDate}`],
@@ -54,27 +64,45 @@ export default function AppointmentBooking() {
   });
 
   const createAppointmentMutation = useMutation({
-    mutationFn: async (data: Omit<BookingFormData, "selectedTimeSlot">) => {
+    mutationFn: async (data: Omit<BookingFormData, "selectedTimeSlot"> & { doctorId: number }) => {
       const response = await apiRequest("POST", "/api/appointments", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      const { doctorId } = variables;
+
       toast({
-        title: "Appointment Booked",
-        description: "Your appointment has been successfully booked.",
+        title: "Đã đặt lịch thành công",
+        description: "Cuộc hẹn của bạn đã được đặt thành công với bác sĩ.",
       });
+
       form.reset();
       setSelectedTimeSlot("");
-      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to book appointment. Please try again.",
-        variant: "destructive",
+
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return (
+            typeof key === "string" &&
+            (
+              key.includes("/api/appointments/doctor") ||
+              key.includes(`/api/appointments/patient/${currentPatientId}`) ||
+              key.includes("todayAppointments") ||
+              key.includes("pendingConfirmations") ||
+              key.includes("patient-count")
+            )
+          );
+        },
       });
+      queryClient.invalidateQueries({
+        queryKey: ["todayAppointments", doctorId, selectedDate],
+      });
+
     },
   });
+
+
+
 
   const handleTimeSlotSelect = (time: string) => {
     setSelectedTimeSlot(time);
@@ -84,7 +112,10 @@ export default function AppointmentBooking() {
 
   const onSubmit = (data: BookingFormData) => {
     const { selectedTimeSlot, ...appointmentData } = data;
-    createAppointmentMutation.mutate(appointmentData);
+    createAppointmentMutation.mutate({
+      ...appointmentData,
+      doctorId: selectedDoctorId, // bạn cần có biến doctorId trong form hoặc context
+    });
   };
 
   return (
@@ -92,9 +123,9 @@ export default function AppointmentBooking() {
       <CardHeader className="appointment-booking__header">
         <CardTitle className="text-xl font-semibold text-neutral-800">
           <CalendarPlus className="text-blue-600 mr-2 inline" />
-          Book Appointment
+          Đặt Lịch Khám
         </CardTitle>
-        <p className="text-sm text-neutral-500 mt-1">Schedule your visit with our healthcare professionals</p>
+        <p className="text-sm text-neutral-500 mt-1">Lên lịch cho bạn với các chuyên gia chăm sóc sức khỏe của chúng tôi</p>
       </CardHeader>
       <CardContent className="appointment-booking__form">
         <Form {...form}>
@@ -107,7 +138,7 @@ export default function AppointmentBooking() {
                 <FormItem className="form-group">
                   <FormLabel className="form-group__label">
                     <User className="mr-1 inline h-4 w-4" />
-                    Select Doctor
+                    Chọn bác sĩ
                   </FormLabel>
                   <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                     <FormControl>
@@ -136,7 +167,7 @@ export default function AppointmentBooking() {
                 <FormItem className="form-group">
                   <FormLabel className="form-group__label">
                     <Calendar className="mr-1 inline h-4 w-4" />
-                    Select Date
+                    Chọn ngày khám
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -159,7 +190,7 @@ export default function AppointmentBooking() {
                 <FormItem className="form-group">
                   <FormLabel className="form-group__label">
                     <Stethoscope className="mr-1 inline h-4 w-4" />
-                    Type of Examination
+                    Loại khám bệnh
                   </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
@@ -168,10 +199,10 @@ export default function AppointmentBooking() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="consultation">General Consultation</SelectItem>
-                      <SelectItem value="checkup">Routine Check-up</SelectItem>
-                      <SelectItem value="followup">Follow-up Visit</SelectItem>
-                      <SelectItem value="emergency">Emergency Consultation</SelectItem>
+                      <SelectItem value="Khám tổng quát">Khám tổng quát</SelectItem>
+                      <SelectItem value="Tái khám">Tái khám</SelectItem>
+                      <SelectItem value="Khám da liễu">Khám da liễu</SelectItem>
+                      <SelectItem value="Khám cấp cứu">Khám cấp cứu</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -187,7 +218,7 @@ export default function AppointmentBooking() {
                 <FormItem className="form-group">
                   <FormLabel className="form-group__label">
                     <Clock className="mr-1 inline h-4 w-4" />
-                    Available Time Slots
+                    Chọn khung giờ
                   </FormLabel>
                   <div className="time-slots">
                     {availableSlots.map((slot) => (
@@ -195,9 +226,8 @@ export default function AppointmentBooking() {
                         key={slot}
                         type="button"
                         variant="outline"
-                        className={`time-slot ${
-                          selectedTimeSlot === slot ? "time-slot--selected" : ""
-                        }`}
+                        className={`time-slot ${selectedTimeSlot === slot ? "time-slot--selected" : ""
+                          }`}
                         onClick={() => handleTimeSlotSelect(slot)}
                       >
                         {slot}
@@ -215,11 +245,11 @@ export default function AppointmentBooking() {
               name="reason"
               render={({ field }) => (
                 <FormItem className="form-group">
-                  <FormLabel className="form-group__label">Reason for Visit</FormLabel>
+                  <FormLabel className="form-group__label">Lý do khám bệnh</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Please describe your symptoms or reason for the visit..."
+                      placeholder="Vui lòng mô tả triệu chứng hoặc lý do khám bệnh..."
                       className="form-group__input"
                     />
                   </FormControl>
@@ -234,7 +264,7 @@ export default function AppointmentBooking() {
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 font-medium transition-colors"
             >
               <Check className="mr-2 h-4 w-4" />
-              {createAppointmentMutation.isPending ? "Booking..." : "Book Appointment"}
+              {createAppointmentMutation.isPending ? "Booking..." : "Đặt lịch khám"}
             </Button>
           </form>
         </Form>
