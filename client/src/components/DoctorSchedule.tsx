@@ -7,18 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AppointmentWithDetails } from "@shared/schema";
-import { log } from "console";
-import { apiRequest } from "@/lib/queryClient";
+// import { log } from "console";
+// import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface DoctorScheduleProps {
   doctorId: number;
-
+  selectedDate: string;
+  setSelectedDate: (date: string) => void;
   onReschedule: (appointment: AppointmentWithDetails) => void;
 }
 
-export default function DoctorSchedule({ doctorId, onReschedule }: DoctorScheduleProps) {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+export default function DoctorSchedule({ doctorId, selectedDate,
+  setSelectedDate, onReschedule }: DoctorScheduleProps) {
+  // const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [viewMode, setViewMode] = useState<"day" | "week">("day");
+  const { toast } = useToast();
 
 
   const selectedDateObj = new Date(selectedDate);
@@ -51,7 +55,13 @@ export default function DoctorSchedule({ doctorId, onReschedule }: DoctorSchedul
     },
   });
 
-
+  //  const { data: todayAppointments = [] } = useQuery({
+  //     queryKey: ["todayAppointments", doctorId, selectedDate],
+  //     queryFn: async () =>
+  //       fetch(`/api/doctor/${doctorId}/today-appointments?date=${selectedDate}`).then((res) =>
+  //         res.json()
+  //       ),
+  //   });
 
 
 
@@ -81,7 +91,18 @@ export default function DoctorSchedule({ doctorId, onReschedule }: DoctorSchedul
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(); // Tải lại danh sách lịch hẹn
+      toast({
+        title: "Xác nhận thành công",
+        description: "Lịch hẹn đã được xác nhận.",
+      });
+      queryClient.invalidateQueries();
+    },
+    onError: () => {
+      toast({
+        title: "Xác nhận thất bại",
+        description: "Đã xảy ra lỗi khi xác nhận lịch hẹn.",
+        variant: "destructive",
+      });
     },
   });
 

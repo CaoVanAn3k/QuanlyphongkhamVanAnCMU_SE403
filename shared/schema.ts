@@ -11,7 +11,7 @@ import {
 import { integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
+import { sql } from "drizzle-orm";
 export const doctors = mysqlTable("doctors", {
   id: int("id").primaryKey().autoincrement(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -25,7 +25,8 @@ export const patients = mysqlTable("patients", {
   fullName: varchar("full_name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   phone: varchar("phone", { length: 20 }).notNull(),
-  dateOfBirth: varchar("date_of_birth", { length: 50 }),
+  dateOfBirth: varchar("date_of_birth", { length: 50 }).default(sql`NULL`),
+
   address: text("address"),
 });
 
@@ -38,6 +39,7 @@ export const appointments = mysqlTable("appointments", {
   type: varchar("type", { length: 100 }).notNull(),
   status: varchar("status", { length: 100 }).notNull().default("pending"),
   reason: text("reason"),
+  cancellationReason: text("cancellation_reason"),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -54,9 +56,28 @@ export const notificationSettings = mysqlTable("notification_settings", {
 export const insertDoctorSchema = createInsertSchema(doctors).omit({
   id: true,
 });
-export const insertPatientSchema = createInsertSchema(patients).omit({
-  id: true,
+// export const insertPatientSchema = createInsertSchema(patients).omit({
+//   id: true,
+// });
+export const insertPatientSchema = z.object({
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(5),
+  dateOfBirth: z.string().nullable().optional(), // ✅ Cho phép null
+  address: z.string().min(1),
 });
+
+// export const insertPatientSchema = z.object({
+//   fullName: z.string().min(1),
+//   email: z.string().email(),
+//   phone: z.string().min(5),
+//   dateOfBirth: z
+//     .string()
+//     .regex(/^\d{4}-\d{2}-\d{2}$/, "Định dạng ngày phải là YYYY-MM-DD")
+//     .optional()
+//     .nullable(),
+// });
+
 export const insertAppointmentSchema = createInsertSchema(appointments).omit({
   id: true,
   createdAt: true,
@@ -112,3 +133,11 @@ export type DoctorWithStats = Doctor & {
   pendingAppointments: number;
   totalPatients: number;
 };
+export const APPOINTMENT_TYPES = [
+  "general",
+  "dentist",
+  "cardiology",
+  "dermatology",
+  "eye",
+  "orthopedic",
+];

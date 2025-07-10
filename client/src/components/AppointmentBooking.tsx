@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertAppointmentSchema, type Doctor } from "@shared/schema";
 import { z } from "zod";
-import { log } from "console";
+
 
 const bookingFormSchema = insertAppointmentSchema.extend({
   selectedTimeSlot: z.string().min(1, "Please select a time slot"),
@@ -58,7 +58,7 @@ export default function AppointmentBooking() {
 
 
 
-  const { data: availableSlots = [] } = useQuery<string[]>({
+  const { data: availableSlots = [], refetch: refetchSlots } = useQuery<string[]>({
     queryKey: [`/api/appointments/available-slots/${selectedDoctorId}/${selectedDate}`],
     enabled: selectedDoctorId > 0 && !!selectedDate,
   });
@@ -78,7 +78,11 @@ export default function AppointmentBooking() {
 
       form.reset();
       setSelectedTimeSlot("");
-
+      refetchSlots?.();
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["todayAppointments", doctorId, selectedDate],
+      });
       queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey[0];
@@ -94,9 +98,7 @@ export default function AppointmentBooking() {
           );
         },
       });
-      queryClient.invalidateQueries({
-        queryKey: ["todayAppointments", doctorId, selectedDate],
-      });
+
 
     },
   });

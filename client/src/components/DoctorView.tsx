@@ -32,7 +32,7 @@ export default function DoctorView({ onReschedule }: DoctorViewProps) {
   const [selectedType, setSelectedType] = useState<"today" | "pending" | "patients" | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
-    return today.toISOString().split("T")[0]; // "2025-07-03"
+    return today.toISOString().split("T")[0];
   });
 
 
@@ -59,7 +59,8 @@ export default function DoctorView({ onReschedule }: DoctorViewProps) {
 
   return (
     <div className="space-y-6">
-      <DoctorSchedule doctorId={currentDoctorId} onReschedule={onReschedule} />
+      <DoctorSchedule doctorId={currentDoctorId} selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate} onReschedule={onReschedule} />
 
       {/* Doctor Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

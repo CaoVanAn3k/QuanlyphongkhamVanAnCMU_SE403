@@ -26,15 +26,15 @@ export default function NotificationSettings({ patientId }: NotificationSettings
     },
     onSuccess: () => {
       toast({
-        title: "Settings Updated",
-        description: "Your notification preferences have been saved.",
+        title: "Cài đặt đã được cập nhật",
+        description: "Tùy chọn thông báo của bạn đã được lưu.",
       });
       queryClient.invalidateQueries({ queryKey: [`/api/notification-settings/${patientId}`] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update notification settings.",
+        title: "Lỗi cập nhật cài đặt",
+        description: "Không cập nhật được cài đặt thông báo. Vui lòng thử lại sau.",
         variant: "destructive",
       });
     },

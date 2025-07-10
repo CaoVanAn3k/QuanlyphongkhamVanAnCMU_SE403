@@ -346,20 +346,32 @@ export class DbStorage {
     return result[0];
   }
 
-  async getPatientByEmail(email: string): Promise<Patient | undefined> {
-    const result = await db
-      .select()
-      .from(patients)
-      .where(eq(patients.email, email));
-    return result[0];
+  // async getPatientByEmail(email: string): Promise<Patient | undefined> {
+  //   const result = await db
+  //     .select()
+  //     .from(patients)
+  //     .where(eq(patients.email, email));
+  //   return result[0];
+  // }
+  async findPatientByEmail(email: string) {
+    return db.query.patients.findFirst({
+      where: (patients, { eq }) => eq(patients.email, email),
+    });
   }
+  async createPatient(data: {
+    fullName: string;
+    email: string;
+    phone: string;
+    dateOfBirth?: string | null;
+    address: string;
+  }) {
+    await db.insert(patients).values(data);
 
-  async createPatient(data: InsertPatient): Promise<Patient> {
-    await db.insert(patients).values(data); // Chèn dữ liệu
     const [newPatient] = await db
       .select()
       .from(patients)
-      .where(eq(patients.email, data.email)); // Tìm lại theo email (unique)
+      .orderBy(desc(patients.id))
+      .limit(1);
 
     return newPatient!;
   }
@@ -571,6 +583,31 @@ export class DbStorage {
     }));
   }
 
+  // async cancelAppointment(id: number): Promise<boolean> {
+  //   const result = await db
+  //     .update(appointments)
+  //     .set({ status: "cancelled" })
+  //     .where(eq(appointments.id, id));
+
+  //   return result.length > 0; // nếu bạn dùng returning() thì có thể dùng rows
+  // }
+  async cancelAppointmentWithDetails(
+    id: number,
+    reason?: string,
+    notes?: string
+  ): Promise<boolean> {
+    const result = await db
+      .update(appointments)
+      .set({
+        status: "cancelled",
+        cancellationReason: reason ?? null,
+        notes: notes ?? null,
+      })
+      .where(eq(appointments.id, id));
+
+    return result.length > 0;
+  }
+
   async updateAppointmentStatus(id: number, status: string) {
     await db
       .update(appointments)
@@ -647,6 +684,17 @@ export class DbStorage {
       .limit(1); // Giả định rằng bản ghi mới nhất là cái vừa chèn
 
     return newAppointment!;
+  }
+
+  // storage/index.ts (hoặc storage/patients.ts)
+  async getPatientByEmail(email: string): Promise<Patient | null> {
+    const patient = await db
+      .select()
+      .from(patients)
+      .where(eq(patients.email, email))
+      .limit(1);
+
+    return patient[0] ?? null;
   }
 
   // async getAppointmentsByDoctorId(doctorId: number) {

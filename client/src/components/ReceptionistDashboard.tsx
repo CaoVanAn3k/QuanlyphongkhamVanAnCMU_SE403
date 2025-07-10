@@ -11,6 +11,17 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { AppointmentWithDetails, Doctor } from "@shared/schema";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import AppointmentCreateForm from "./AppointmentCreateForm";
+import { CancelAppointmentModal } from "./CancelAppointmentModal/CancelAppointmentModal";
+
+
 
 interface ReceptionistDashboardProps {
   onReschedule: (appointment: AppointmentWithDetails) => void;
@@ -18,16 +29,22 @@ interface ReceptionistDashboardProps {
 
 export default function ReceptionistDashboard({ onReschedule }: ReceptionistDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterDoctor, setFilterDoctor] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  const [filterDoctor, setFilterDoctor] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedAppointments, setSelectedAppointments] = useState<number[]>([]);
-  
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
+  const [openCancelModal, setOpenCancelModal] = useState(false);
 
   const { data: appointments = [] } = useQuery<AppointmentWithDetails[]>({
-    queryKey: ["/api/appointments"],
+    queryKey: ["appointments"],
+    queryFn: async () => {
+      const res = await fetch("/api/appointments");
+      return res.json();
+    },
   });
 
   const { data: doctors = [] } = useQuery<Doctor[]>({
@@ -76,17 +93,50 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
     },
   });
 
-  const filteredAppointments = appointments.filter((appointment) => {
-    const matchesSearch = 
-      appointment.patient.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      appointment.doctor.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesDoctor = !filterDoctor || appointment.doctor.id.toString() === filterDoctor;
-    const matchesStatus = !filterStatus || appointment.status === filterStatus;
-    const matchesDate = !filterDate || appointment.date === filterDate;
 
-    return matchesSearch && matchesDoctor && matchesStatus && matchesDate;
+  // const filteredAppointments = appointments.filter((appointment) => {
+  //   const lowerSearch = searchQuery.toLowerCase();
+  //   return (
+  //     appointment.patient.fullName.toLowerCase().includes(lowerSearch) ||
+  //     appointment.doctor.name.toLowerCase().includes(lowerSearch)
+  //   );
+
+  // });
+
+  // const filteredAppointments = appointments.filter((appointment) => {
+  //   const matchDoctor =
+  //     filterDoctor === "all" || appointment.doctor.id.toString() === filterDoctor;
+
+  //   const matchSearch =
+  //     searchQuery === "" ||
+  //     appointment.patient.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  //     appointment.doctor.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+  //   return matchDoctor && matchSearch;
+  // });
+
+  const filteredAppointments = appointments.filter((appointment) => {
+    const lowerSearch = searchQuery.toLowerCase();
+
+    const matchDoctor =
+      filterDoctor === "all" || appointment.doctor.id.toString() === filterDoctor;
+
+    const matchStatus =
+      filterStatus === "all" || appointment.status === filterStatus;
+
+    const matchSearch =
+      searchQuery === "" ||
+      appointment.patient.fullName.toLowerCase().includes(lowerSearch) ||
+      appointment.doctor.name.toLowerCase().includes(lowerSearch);
+
+    const matchDate =
+      filterDate === "" || appointment.date === filterDate;
+
+    return matchDoctor && matchStatus && matchSearch && matchDate;
   });
+
+
+
 
   const handleSelectAppointment = (appointmentId: number, selected: boolean) => {
     if (selected) {
@@ -116,9 +166,28 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
     updateAppointmentMutation.mutate({ id, updates: { status: "confirmed" } });
   };
 
-  const handleCancelAppointment = (id: number) => {
-    deleteAppointmentMutation.mutate(id);
+
+  const handleCancelAppointment = async (id: number, reason: string, notes: string) => {
+    try {
+      const res = await apiRequest("POST", `/api/appointments/${id}/cancelled`, {
+        reason,
+        notes,
+      });
+      if (!res.ok) throw new Error("Huỷ lịch hẹn thất bại");
+
+      toast({ title: "Thành công", description: "Đã huỷ lịch hẹn" });
+      setOpenCancelModal(false);
+      // refetchAppointments?.(); // load lại dữ liệu
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    } catch {
+      toast({
+        title: "Lỗi",
+        description: "Không thể huỷ lịch hẹn",
+        variant: "destructive",
+      });
+    }
   };
+
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -140,14 +209,24 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
           <div>
             <CardTitle className="text-xl font-semibold text-neutral-800">
               <BarChart3 className="text-blue-600 mr-2 inline" />
-              Receptionist Dashboard
+              Bảng điều khiển tiếp tân
             </CardTitle>
-            <p className="text-sm text-neutral-500 mt-1">Manage all clinic appointments and patient information</p>
+            <p className="text-sm text-neutral-500 mt-1">Quản lý tất cả các cuộc hẹn phòng khám và thông tin bệnh nhân</p>
           </div>
-          <Button className="bg-blue-600 text-white hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" />
-            New Appointment
-          </Button>
+          <Dialog onOpenChange={setOpen} open={open}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 text-white hover:bg-blue-700">
+                <Plus className="mr-2 h-4 w-4" />
+                Cuộc hẹn mới
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tạo cuộc hẹn mới</DialogTitle>
+              </DialogHeader>
+              <AppointmentCreateForm onSuccess={() => setOpen(false)} />
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
 
@@ -155,11 +234,11 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
       <div className="dashboard__filters">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Search</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Tìm kiếm</label>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Search patients..."
+                placeholder="Tìm kiếm bệnh nhân hoặc bác sĩ"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8"
@@ -169,13 +248,13 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Doctor</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Bác sĩ</label>
             <Select value={filterDoctor} onValueChange={setFilterDoctor}>
               <SelectTrigger>
-                <SelectValue placeholder="All Doctors" />
+                <SelectValue placeholder="Tất cả bác sĩ" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Doctors</SelectItem>
+                <SelectItem value="all">Tất cả bác sĩ</SelectItem>
                 {doctors.map((doctor) => (
                   <SelectItem key={doctor.id} value={doctor.id.toString()}>
                     {doctor.name}
@@ -186,13 +265,13 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Trạng thái</label>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger>
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder="Tất cả trạng thái" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">Tất cả trạng thái</SelectItem>
                 <SelectItem value="confirmed">Confirmed</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -201,7 +280,7 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Date Range</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Ngày</label>
             <Input
               type="date"
               value={filterDate}
@@ -266,29 +345,28 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
                         <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 p-1" title="Edit">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-green-600 hover:text-green-700 p-1" 
-                          title="Confirm"
-                          onClick={() => handleConfirmAppointment(appointment.id)}
-                          disabled={appointment.status === "confirmed"}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-red-600 hover:text-red-700 p-1" 
-                          title="Cancel"
-                          onClick={() => handleCancelAppointment(appointment.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-neutral-500 hover:text-neutral-700 p-1" 
+                        {
+                          appointment.status !== 'cancelled' && (
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 p-1"
+                              title="Huỷ"
+                              onClick={() => {
+                                setSelectedAppointmentId(appointment.id);
+                                setOpenCancelModal(true);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )
+                        }
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-neutral-500 hover:text-neutral-700 p-1"
                           title="Reschedule"
                           onClick={() => onReschedule(appointment)}
                         >
@@ -313,9 +391,9 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
         <div className="mt-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <span className="text-sm text-neutral-500">Bulk actions:</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="text-blue-600 hover:text-blue-700"
               onClick={() => handleBulkAction("confirm")}
               disabled={selectedAppointments.length === 0}
@@ -323,9 +401,10 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
               <Check className="mr-1 h-3 w-3" />
               Confirm Selected
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
+
+            <Button
+              variant="outline"
+              size="sm"
               className="text-red-600 hover:text-red-700"
               onClick={() => handleBulkAction("cancel")}
               disabled={selectedAppointments.length === 0}
@@ -340,7 +419,20 @@ export default function ReceptionistDashboard({ onReschedule }: ReceptionistDash
             <span className="text-sm text-neutral-600">Page 1 of 1</span>
           </div>
         </div>
+
       </CardContent>
+      {selectedAppointmentId && (
+        <CancelAppointmentModal
+          open={openCancelModal}
+          onClose={() => setOpenCancelModal(false)}
+          onConfirm={(reason, notes) => {
+            if (selectedAppointmentId) {
+              handleCancelAppointment(selectedAppointmentId, reason, notes);
+            }
+          }}
+        />
+      )}
+
     </Card>
   );
 }

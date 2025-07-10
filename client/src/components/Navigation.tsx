@@ -2,11 +2,31 @@ import { Stethoscope, Bell, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { UserRole } from "@/pages/clinic-dashboard";
+import { useState } from "react";
 
 interface NavigationProps {
   currentRole: UserRole;
   onRoleChange: (role: UserRole) => void;
 }
+
+
+const profileByRole = {
+  patient: {
+    name: "Cao Văn An",
+    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
+  },
+  doctor: {
+    name: "Nguyễn Văn An",
+    avatar: "https://rabiamoontrust.org/wp-content/uploads/2024/01/DDF.jpg",
+  },
+  receptionist: {
+    name: "Cao Văn Ngọc",
+    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100",
+  },
+};
+
+
+
 
 export default function Navigation({ currentRole, onRoleChange }: NavigationProps) {
   const getRoleIcon = (role: UserRole) => {
@@ -28,6 +48,8 @@ export default function Navigation({ currentRole, onRoleChange }: NavigationProp
     receptionist: "Nhân viên"
   };
 
+
+
   return (
     <>
       {/* Navigation Header */}
@@ -36,20 +58,26 @@ export default function Navigation({ currentRole, onRoleChange }: NavigationProp
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Stethoscope className="text-blue-600 text-2xl mr-3" />
-              <h1 className="text-xl font-semibold text-neutral-800">ClinicCare Management</h1>
+              <h1 className="text-xl font-semibold text-neutral-800">Phòng khám Văn An</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="text-neutral-500 hover:text-neutral-800">
+              {/* <Button variant="ghost" size="sm" className="text-neutral-500 hover:text-neutral-800">
                 <Bell className="h-4 w-4 mr-1" />
                 Thông báo
-              </Button>
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100" alt="Profile" />
-                  <AvatarFallback>DS</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium text-neutral-800">Cao Văn An</span>
-              </div>
+              </Button> */}
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={profileByRole[currentRole].avatar} alt="Profile" />
+                <AvatarFallback>
+                  {profileByRole[currentRole].name
+                    .split(" ")
+                    .map((w) => w[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium text-neutral-800">
+                {profileByRole[currentRole].name}
+              </span>
+
             </div>
           </div>
         </div>

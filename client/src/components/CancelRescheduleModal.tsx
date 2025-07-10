@@ -115,7 +115,7 @@ export default function CancelRescheduleModal({ appointment, onClose }: CancelRe
 
   const deleteAppointmentMutation = useMutation({
     mutationFn: async (body: { appointmentId: number; reason?: string; notes?: string }) => {
-      const res = await fetch(`/api/appointments/${body.appointmentId}/cancel`, {
+      const res = await fetch(`/api/appointments/${body.appointmentId}/cancelled`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

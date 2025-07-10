@@ -7,11 +7,18 @@ import {
   insertPatientSchema,
   insertNotificationSettingsSchema,
   updatePatientSchema,
+  APPOINTMENT_TYPES,
 } from "@shared/schema";
 import { z } from "zod";
 import { sendConfirmationEmail } from "./lib/sendConfirmationEmail";
 import { sendCancellationEmail } from "./lib/sendCancellationEmail";
-
+const checkOrCreateSchema = z.object({
+  fullName: z.string(),
+  email: z.string().email(),
+  phone: z.string(),
+  dateOfBirth: z.string().optional().nullable(),
+  address: z.string().min(1, "Địa chỉ không được để trống"),
+});
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all doctors
   app.get("/api/doctors", async (req, res) => {
@@ -50,18 +57,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get patient by email
-  app.get("/api/patients/by-email/:email", async (req, res) => {
+  // app.get("/api/patients/by-email/:email", async (req, res) => {
+  //   try {
+  //     const email = req.params.email;
+  //     const patient = await storage.getPatientByEmail(email);
+
+  //     if (!patient) {
+  //       return res.status(404).json({ message: "Patient not found" });
+  //     }
+
+  //     res.json(patient);
+  //   } catch (error) {
+  //     res.status(500).json({ message: "Failed to fetch patient" });
+  //   }
+  // });
+
+  app.post("/api/patients/check-or-create", async (req, res) => {
     try {
-      const email = req.params.email;
+      const data = checkOrCreateSchema.parse(req.body);
+
+      const existingPatient = await storage.findPatientByEmail(data.email);
+      if (existingPatient) {
+        return res.json({ patientId: existingPatient.id });
+      }
+
+      const newPatient = await storage.createPatient(data); // data đã bao gồm dateOfBirth
+      res.status(201).json({ patientId: newPatient.id });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res
+          .status(400)
+          .json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Check or Create Patient Error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // routes/patients.ts
+  app.get("/api/patients", async (req, res) => {
+    const email = req.query.email as string;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    try {
       const patient = await storage.getPatientByEmail(email);
 
       if (!patient) {
         return res.status(404).json({ message: "Patient not found" });
       }
 
-      res.json(patient);
+      return res.json(patient);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch patient" });
+      console.error("Error fetching patient by email:", error);
+      res.status(500).json({ message: "Server error" });
     }
   });
 
@@ -346,6 +397,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Server error" });
     }
   });
+  app.get("/api/appointment-types", (req, res) => {
+    res.json(APPOINTMENT_TYPES);
+  });
   app.post("/api/appointments/:id/cancel", async (req, res) => {
     const appointmentId = parseInt(req.params.id);
     const { reason, notes } = req.body;
@@ -384,6 +438,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("❌ Error cancelling appointment:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // routes/appointments.ts (hoặc nơi bạn định nghĩa các route)
+
+  // app.post("/api/appointments/:id/cancelledd", async (req, res) => {
+  //   const id = Number(req.params.id);
+
+  //   if (isNaN(id)) {
+  //     return res.status(400).json({ message: "Invalid appointment ID" });
+  //   }
+
+  //   try {
+  //     const updated = await storage.cancelAppointment(id);
+
+  //     if (!updated) {
+  //       return res.status(404).json({ message: "Appointment not found" });
+  //     }
+
+  //     return res.json({ message: "Appointment cancelled" });
+  //   } catch (error) {
+  //     console.error("Cancel Appointment Error:", error);
+  //     return res
+  //       .status(500)
+  //       .json({ message: "Server error while cancelling appointment" });
+  //   }
+  // });
+
+  app.post("/api/appointments/:id/cancelled", async (req, res) => {
+    const appointmentId = parseInt(req.params.id);
+    const { reason, notes } = req.body;
+
+    try {
+      const appointment = await storage.getAppointmentByIdWithDetails(
+        appointmentId
+      );
+      if (!appointment) {
+        return res.status(404).json({ message: "Appointment not found" });
+      }
+
+      // Cập nhật trạng thái trong DB
+      const updated = await storage.cancelAppointmentWithDetails(
+        appointmentId,
+        reason,
+        notes
+      );
+      if (!updated) {
+        return res
+          .status(500)
+          .json({ message: "Failed to cancel appointment" });
+      }
+
+      const { patient, doctor, notificationSettings } = appointment;
+
+      // Gửi email nếu bệnh nhân bật thông báo và có email
+      if (notificationSettings?.email_enabled && patient?.email) {
+        await sendCancellationEmail({
+          to: patient.email,
+          patientName: patient.fullName,
+          doctorName: doctor.name,
+          date: appointment.date,
+          time: appointment.time,
+          reason,
+          notes,
+        });
+      }
+
+      res.json({ message: "Appointment cancelled successfully" });
+    } catch (error) {
+      console.error("❌ Error cancelling appointment:", error);
+      res
+        .status(500)
+        .json({ message: "Server error while cancelling appointment" });
     }
   });
 
